@@ -1,0 +1,17 @@
+CMakeLists.txt
+ModulesLoader.cpp.in.cmake
+ModulesPCH.h
+ModulesScriptLoader.h
+create_module.sh
+how_to_make_a_module.md
+mod-ah-bot-plus
+mod-aoe-loot
+mod-assistant
+mod-autobalance
+mod-junk-to-gold
+mod-learn-spells
+mod-multibot-bridge
+mod-player-bot-level-brackets
+mod-playerbots
+mod-quest-helper
+mod-solo-lfg
