@@ -1,7 +1,7 @@
 # azerothcore-deploy
 
 Deployment state and diagnostic history for the AzerothCore/Playerbots homelab
-setup at 10.0.0.85 (Illidan/Sunstrider). Not a code repo, no build here.
+setup at <homelab-vm-lan-ip> (Illidan/Sunstrider). Not a code repo, no build here.
 
 ## Contents
 

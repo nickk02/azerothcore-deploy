@@ -1,6 +1,0 @@
-CMakeLists.txt
-ModulesLoader.cpp.in.cmake
-ModulesPCH.h
-ModulesScriptLoader.h
-create_module.sh
-how_to_make_a_module.md
