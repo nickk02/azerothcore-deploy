@@ -3,7 +3,7 @@
 Backfill of everything touched on Sunstrider (upstream realm, `acore_world`) and Illidan
 (Playerbots realm, `acore_pb_world`) since 2026-07-28, reconciled against the live databases
 and the GitHub API rather than trusted from memory. **The single most important fact in this
-table: of the 16 rows marked `applied`, ALL 16 are `verified-in-game: no`.** Nothing has been
+table: of the 19 rows marked `applied`, ALL 19 are `verified-in-game: no`.** Nothing has been
 confirmed working from an actual game client except the RealmID config-resolution fix (see
 docs/incidents/2026-07-30-sunstrider-realmid-config-resolution.md), which isn't a PR at all.
 
@@ -13,13 +13,23 @@ merge upstream is still #26855 (2026-07-29T08:02:17Z), already tracked as `skipp
 was found already applied on both realms during this pass (merged 2026-07-28, predates #26856 but had
 been missed by the earlier backfill) and is now tracked as `already-satisfied`.
 
+The 6 rows previously marked `unknown` (26097, 26694, 13322, 19679, 24380, 26763) were
+resolved on 2026-07-30: five of the six numbers were never PRs at all -- they were upstream
+GitHub *Issue* numbers that the compiled backlog mistook for PR numbers (issues and PRs share
+one number sequence on the same repo). Of those five, #26097 and #26694 turned out to have
+hand-authored SQL fixes in `nickk02/azerothcore-ops` round2sql-archive/ that DB checks confirm
+are live on both realms (now `applied`); #13322, #19679, and #24380 have no fix anywhere and
+DB checks confirm the underlying bugs are still present (now `skipped`). The sixth, #26763,
+was in fact a real, still-open upstream PR that an earlier pass missed on a bad search --
+its SQL is also confirmed live on both realms (now `applied`). See each PR's doc for the
+evidence trail.
+
 ## Counts by status
 
 | status | count |
 |---|---|
-| applied | 16 |
-| skipped | 24 |
-| unknown | 6 |
+| applied | 19 |
+| skipped | 27 |
 | blocked | 1 |
 | already-satisfied | 2 |
 | **total** | **49** |
@@ -48,6 +58,9 @@ Plus: 2 issues tracked (docs/issues/), 19 modules tracked (docs/modules/, 11 act
 | [26784](prs/26784.md) | Righteous Sermon group completion | sql-only | yes | yes | applied | no |
 | [26764](prs/26764.md) | Urgreth of the Thousand Tombs Pt.2 | sql-only | yes | yes | applied | no |
 | [26856](prs/26856.md) | Trail of Fire SmartAI rewrite | paired | yes (complete) | no | applied | no |
+| [26763](prs/26763.md) | Avalanche sub-Zone Pt.1 (Bythius etc.) | sql-only | yes | yes | applied | no |
+| [26097](prs/26097.md) | Thunderlord Clan Artifacts drop fix (Issue #26097, not a PR) | sql-only | yes | yes | applied | no |
+| [26694](prs/26694.md) | Heroic (1) variants missing pickpocket loot (Issue #26694, not a PR) | sql-only | yes | yes | applied | no |
 | [26375](prs/26375.md) | Custom spell attributes to DB | paired | SQL only | SQL only | blocked | no |
 | [26760](prs/26760.md) | Dead Mage Hunter improvements | sql-only | yes (pre-existing) | yes (pre-existing) | already-satisfied | no |
 | [26842](prs/26842.md) | Use Correct Spell for Scalawag Point | sql-only | yes (pre-existing) | yes (pre-existing) | already-satisfied | no |
@@ -75,12 +88,9 @@ Plus: 2 issues tracked (docs/issues/), 19 modules tracked (docs/modules/, 11 act
 | [26539](prs/26539.md) | SAI SetFollow speed inheritance | cpp-only | no | no | skipped | no |
 | [26843](prs/26843.md) | Abdul the Insane creatures | sql-only | no (unconfirmed) | no (unconfirmed) | skipped | no |
 | [26292](prs/26292.md) | Ursal the Mauler druids freed | sql-only | no | no | skipped | no |
-| [26097](prs/26097.md) | (number does not exist upstream) | unknown | -- | -- | unknown | no |
-| [26694](prs/26694.md) | (number does not exist upstream) | unknown | -- | -- | unknown | no |
-| [26763](prs/26763.md) | Avalanche sub-Zone Pt.1 (Bythius etc.) | sql-only | inconclusive | inconclusive | unknown | no |
-| [13322](prs/13322.md) | (number does not exist upstream) | unknown | -- | -- | unknown | no |
-| [19679](prs/19679.md) | (number does not exist upstream) | unknown | -- | -- | unknown | no |
-| [24380](prs/24380.md) | (number does not exist upstream) | unknown | -- | -- | unknown | no |
+| [13322](prs/13322.md) | Lake Snappers missing from Lake Elrendar (Issue #13322, not a PR) | issue-only | no | no | skipped | no |
+| [19679](prs/19679.md) | Bloodmyst Isle bridge trigger missing (Issue #19679, not a PR) | issue-only | no | no | skipped | no |
+| [24380](prs/24380.md) | Call to Arms Alliance flags in Dalaran (Issue #24380, not a PR) | issue-only | no | no | skipped | no |
 
 ## Issues
 
