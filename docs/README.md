@@ -18,9 +18,9 @@ docs/incidents/2026-07-30-sunstrider-realmid-config-resolution.md), which isn't 
 | already-satisfied | 1 |
 | **total** | **48** |
 
-Plus: 2 issues tracked (docs/issues/), 19 modules tracked (docs/modules/, 11 actually installed
--- all on Illidan, none on Sunstrider), 6 findings (docs/findings/), 1 incident
-(docs/incidents/).
+Plus: 10 issues tracked (docs/issues/, 2 applied, 8 skipped), 19 modules tracked (docs/modules/,
+11 actually installed -- all on Illidan, none on Sunstrider), 6 findings (docs/findings/), 1
+incident (docs/incidents/).
 
 ## PRs and issues, sorted by status
 
@@ -79,8 +79,16 @@ Plus: 2 issues tracked (docs/issues/), 19 modules tracked (docs/modules/, 11 act
 
 | # | title | status |
 |---|---|---|
-| [7014](issues/7014.md) | Winterfall Village Cave death -> Alterac graveyard | open upstream, not investigated |
-| [6460](issues/6460.md) | Elwynn Forest missing chest pooling | open upstream, not investigated |
+| [16313](issues/16313.md) | Missing Spanish text for Mountaineer Stormpike | applied |
+| [7956](issues/7956.md) | Desolace hyenas missing patrol | applied |
+| [7014](issues/7014.md) | Winterfall Village Cave death -> Alterac graveyard | skipped -- not a DB fix (map/vmap zone geometry) |
+| [6460](issues/6460.md) | Elwynn Forest missing chest pooling | skipped -- no concrete fix in thread |
+| [16312](issues/16312.md) | Missing Spanish text for Mebok Mizzyrix | skipped -- no fix in thread despite label |
+| [20821](issues/20821.md) | No Wisps at Hidden Shrine in Ashenvale | skipped -- proposed fix contradicted in thread |
+| [20820](issues/20820.md) | Blade's Edge Mountains post-2.1 revamp | skipped -- no fix in thread |
+| [23092](issues/23092.md) | Quest 12818 Clean Up gameobject spawns incomplete | skipped -- author retracted fix as unimplementable |
+| [8507](issues/8507.md) | Western Plaguelands Blood of Heroes spawns | skipped -- fix in wrong DB schema (cmangos) |
+| [14209](issues/14209.md) | Missing quest_template_locale entries (bulk) | skipped -- data dump too broad for this pass |
 
 ## Modules
 
