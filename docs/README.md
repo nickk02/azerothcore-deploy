@@ -7,6 +7,12 @@ table: of the 16 rows marked `applied`, ALL 16 are `verified-in-game: no`.** Not
 confirmed working from an actual game client except the RealmID config-resolution fix (see
 docs/incidents/2026-07-30-sunstrider-realmid-config-resolution.md), which isn't a PR at all.
 
+**Sweep status (2026-07-30):** checked upstream `azerothcore/azerothcore-wotlk` for PRs merged after
+#26856 (2026-07-29T08:00:49Z, the latest-tracked PR) -- nothing has merged since. The most recent
+merge upstream is still #26855 (2026-07-29T08:02:17Z), already tracked as `skipped` (cpp-only). #26842
+was found already applied on both realms during this pass (merged 2026-07-28, predates #26856 but had
+been missed by the earlier backfill) and is now tracked as `already-satisfied`.
+
 ## Counts by status
 
 | status | count |
@@ -15,8 +21,8 @@ docs/incidents/2026-07-30-sunstrider-realmid-config-resolution.md), which isn't 
 | skipped | 24 |
 | unknown | 6 |
 | blocked | 1 |
-| already-satisfied | 1 |
-| **total** | **48** |
+| already-satisfied | 2 |
+| **total** | **49** |
 
 Plus: 10 issues tracked (docs/issues/, 2 applied, 8 skipped), 19 modules tracked (docs/modules/,
 11 actually installed -- all on Illidan, none on Sunstrider), 6 findings (docs/findings/), 1
@@ -44,6 +50,7 @@ incident (docs/incidents/).
 | [26856](prs/26856.md) | Trail of Fire SmartAI rewrite | paired | yes (complete) | no | applied | no |
 | [26375](prs/26375.md) | Custom spell attributes to DB | paired | SQL only | SQL only | blocked | no |
 | [26760](prs/26760.md) | Dead Mage Hunter improvements | sql-only | yes (pre-existing) | yes (pre-existing) | already-satisfied | no |
+| [26842](prs/26842.md) | Use Correct Spell for Scalawag Point | sql-only | yes (pre-existing) | yes (pre-existing) | already-satisfied | no |
 | [26801](prs/26801.md) | Catch up missed instance resets | cpp-only | no | no | skipped | no |
 | [26454](prs/26454.md) | Scarlet Monastery Forgiveness visual | paired | no | no | skipped | no |
 | [26810](prs/26810.md) | Sorlof's Booty quest event | paired | no | no | skipped | no |
