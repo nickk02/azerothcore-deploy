@@ -19,7 +19,7 @@ docs/incidents/2026-07-30-sunstrider-realmid-config-resolution.md), which isn't 
 | **total** | **48** |
 
 Plus: 2 issues tracked (docs/issues/), 19 modules tracked (docs/modules/, 11 actually installed
--- all on Illidan, none on Sunstrider), 6 findings (docs/findings/), 1 incident
+-- all on Illidan, none on Sunstrider), 7 findings (docs/findings/), 1 incident
 (docs/incidents/).
 
 ## PRs and issues, sorted by status
@@ -105,6 +105,7 @@ Sunstrider: [ah-bot-plus](modules/ah-bot-plus.md), [aoe-loot](modules/aoe-loot.m
 - [findings/instancesavemgr-day-alignment-bug.md](findings/instancesavemgr-day-alignment-bug.md)
 - [findings/cmake-install-prefix-config-trap.md](findings/cmake-install-prefix-config-trap.md)
 - [findings/illidan-segfaults-playerbots-hypothesis.md](findings/illidan-segfaults-playerbots-hypothesis.md)
+- [findings/mmap-version-mismatch-investigation.md](findings/mmap-version-mismatch-investigation.md) -- generator v20/v19 mismatch is pervasive (44.6% of tiles) but memory-safe by code inspection; not a plausible direct segfault cause
 - [findings/43-file-union-and-filter.md](findings/43-file-union-and-filter.md)
 - [findings/merge-order-lesson-26822-vs-26854.md](findings/merge-order-lesson-26822-vs-26854.md)
 
