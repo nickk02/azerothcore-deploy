@@ -7,6 +7,12 @@ table: of the 19 rows marked `applied`, ALL 19 are `verified-in-game: no`.** Not
 confirmed working from an actual game client except the RealmID config-resolution fix (see
 docs/incidents/2026-07-30-sunstrider-realmid-config-resolution.md), which isn't a PR at all.
 
+**Sweep status (2026-07-30):** checked upstream `azerothcore/azerothcore-wotlk` for PRs merged after
+#26856 (2026-07-29T08:00:49Z, the latest-tracked PR) -- nothing has merged since. The most recent
+merge upstream is still #26855 (2026-07-29T08:02:17Z), already tracked as `skipped` (cpp-only). #26842
+was found already applied on both realms during this pass (merged 2026-07-28, predates #26856 but had
+been missed by the earlier backfill) and is now tracked as `already-satisfied`.
+
 The 6 rows previously marked `unknown` (26097, 26694, 13322, 19679, 24380, 26763) were
 resolved on 2026-07-30: five of the six numbers were never PRs at all -- they were upstream
 GitHub *Issue* numbers that the compiled backlog mistook for PR numbers (issues and PRs share
@@ -25,8 +31,8 @@ evidence trail.
 | applied | 19 |
 | skipped | 27 |
 | blocked | 1 |
-| already-satisfied | 1 |
-| **total** | **48** |
+| already-satisfied | 2 |
+| **total** | **49** |
 
 Plus: 2 issues tracked (docs/issues/), 19 modules tracked (docs/modules/, 11 actually installed
 -- all on Illidan, none on Sunstrider), 6 findings (docs/findings/), 1 incident
@@ -57,6 +63,7 @@ Plus: 2 issues tracked (docs/issues/), 19 modules tracked (docs/modules/, 11 act
 | [26694](prs/26694.md) | Heroic (1) variants missing pickpocket loot (Issue #26694, not a PR) | sql-only | yes | yes | applied | no |
 | [26375](prs/26375.md) | Custom spell attributes to DB | paired | SQL only | SQL only | blocked | no |
 | [26760](prs/26760.md) | Dead Mage Hunter improvements | sql-only | yes (pre-existing) | yes (pre-existing) | already-satisfied | no |
+| [26842](prs/26842.md) | Use Correct Spell for Scalawag Point | sql-only | yes (pre-existing) | yes (pre-existing) | already-satisfied | no |
 | [26801](prs/26801.md) | Catch up missed instance resets | cpp-only | no | no | skipped | no |
 | [26454](prs/26454.md) | Scarlet Monastery Forgiveness visual | paired | no | no | skipped | no |
 | [26810](prs/26810.md) | Sorlof's Booty quest event | paired | no | no | skipped | no |
