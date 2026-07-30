@@ -35,7 +35,7 @@ evidence trail.
 | **total** | **49** |
 
 Plus: 10 issues tracked (docs/issues/, 2 applied, 8 skipped), 19 modules tracked (docs/modules/,
-11 actually installed -- all on Illidan, none on Sunstrider), 7 findings (docs/findings/), 1
+11 actually installed -- all on Illidan, none on Sunstrider), 8 findings (docs/findings/), 1
 incident (docs/incidents/).
 
 ## PRs and issues, sorted by status
@@ -130,6 +130,7 @@ Sunstrider: [ah-bot-plus](modules/ah-bot-plus.md), [aoe-loot](modules/aoe-loot.m
 - [findings/instancesavemgr-day-alignment-bug.md](findings/instancesavemgr-day-alignment-bug.md)
 - [findings/cmake-install-prefix-config-trap.md](findings/cmake-install-prefix-config-trap.md)
 - [findings/illidan-segfaults-playerbots-hypothesis.md](findings/illidan-segfaults-playerbots-hypothesis.md)
+- [findings/illidan-crash-3-gameevent-visit-segfault.md](findings/illidan-crash-3-gameevent-visit-segfault.md) -- third Illidan segfault, first one with a backtrace; plausible mechanism in `GameEventAIHookWorker::Visit`, not confirmed
 - [findings/mmap-version-mismatch-investigation.md](findings/mmap-version-mismatch-investigation.md) -- generator v20/v19 mismatch is pervasive (44.6% of tiles) but memory-safe by code inspection; not a plausible direct segfault cause
 - [findings/43-file-union-and-filter.md](findings/43-file-union-and-filter.md)
 - [findings/merge-order-lesson-26822-vs-26854.md](findings/merge-order-lesson-26822-vs-26854.md)
