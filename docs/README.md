@@ -37,11 +37,11 @@ Plus: 2 issues tracked (docs/issues/), 19 modules tracked (docs/modules/, 11 act
 | [26854](prs/26854.md) | Embalming Slime (1) speed/immunity | sql-only | yes | yes | applied | no |
 | [26800](prs/26800.md) | Sniff Bjomolf waypoints | sql-only | yes | yes | applied | no |
 | [26798](prs/26798.md) | End of the Line (H) reward text/emotes | sql-only | yes | yes | applied | no |
-| [26822](prs/26822.md) | Immunities revert (Embalming/Golem/Retcher/Belcher) | sql-only | yes | partial (bad value on 29356) | applied | no |
+| [26822](prs/26822.md) | Immunities revert (Embalming/Golem/Retcher/Belcher) | sql-only | yes | yes (29356 fixed 2026-07-29) | applied | no |
 | [26709](prs/26709.md) | Kargath Expeditionary Force pathing | sql-only | yes | yes | applied | no |
 | [26784](prs/26784.md) | Righteous Sermon group completion | sql-only | yes | yes | applied | no |
 | [26764](prs/26764.md) | Urgreth of the Thousand Tombs Pt.2 | sql-only | yes | yes | applied | no |
-| [26856](prs/26856.md) | Trail of Fire SmartAI rewrite | paired | broken (no AI set) | no | applied | no |
+| [26856](prs/26856.md) | Trail of Fire SmartAI rewrite | paired | yes (complete) | no | applied | no |
 | [26375](prs/26375.md) | Custom spell attributes to DB | paired | SQL only | SQL only | blocked | no |
 | [26760](prs/26760.md) | Dead Mage Hunter improvements | sql-only | yes (pre-existing) | yes (pre-existing) | already-satisfied | no |
 | [26801](prs/26801.md) | Catch up missed instance resets | cpp-only | no | no | skipped | no |
