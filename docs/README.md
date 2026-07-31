@@ -3,7 +3,7 @@
 Backfill of everything touched on Sunstrider (upstream realm, `acore_world`) and Illidan
 (Playerbots realm, `acore_pb_world`) since 2026-07-28, reconciled against the live databases
 and the GitHub API rather than trusted from memory. **The single most important fact in this
-table: of the 19 rows marked `applied`, ALL 19 are `verified-in-game: no`.** Nothing has been
+table: of the 20 rows marked `applied`, ALL 20 are `verified-in-game: no`.** Nothing has been
 confirmed working from an actual game client except the RealmID config-resolution fix (see
 docs/incidents/2026-07-30-sunstrider-realmid-config-resolution.md), which isn't a PR at all.
 
@@ -24,15 +24,21 @@ was in fact a real, still-open upstream PR that an earlier pass missed on a bad 
 its SQL is also confirmed live on both realms (now `applied`). See each PR's doc for the
 evidence trail.
 
+**Sweep status (2026-07-31):** checked upstream for anything merged after #26856 -- found #26865
+(merged 2026-07-30), a pure-SQL creature/waypoint rewrite with no C++ component. Collision-checked
+the target GUID range (12804-12810), waypoint IDs (128040-128100), and creature_multispawn rows on
+both realms before writing (all free, no custom-content collisions), applied to both realms since it's
+sql-only, and confirmed post-apply state matches the PR's target values identically on both.
+
 ## Counts by status
 
 | status | count |
 |---|---|
-| applied | 19 |
+| applied | 20 |
 | skipped | 27 |
 | blocked | 1 |
 | already-satisfied | 2 |
-| **total** | **49** |
+| **total** | **50** |
 
 Plus: 10 issues tracked (docs/issues/, 2 applied, 8 skipped), 19 modules tracked (docs/modules/,
 11 actually installed -- all on Illidan, none on Sunstrider), 8 findings (docs/findings/), 1
@@ -59,6 +65,7 @@ incident (docs/incidents/).
 | [26764](prs/26764.md) | Urgreth of the Thousand Tombs Pt.2 | sql-only | yes | yes | applied | no |
 | [26856](prs/26856.md) | Trail of Fire SmartAI rewrite | paired | yes (complete) | no | applied | no |
 | [26763](prs/26763.md) | Avalanche sub-Zone Pt.1 (Bythius etc.) | sql-only | yes | yes | applied | no |
+| [26865](prs/26865.md) | If Valguarde Falls... sniffed creature data | sql-only | yes | yes | applied | no |
 | [26097](prs/26097.md) | Thunderlord Clan Artifacts drop fix (Issue #26097, not a PR) | sql-only | yes | yes | applied | no |
 | [26694](prs/26694.md) | Heroic (1) variants missing pickpocket loot (Issue #26694, not a PR) | sql-only | yes | yes | applied | no |
 | [26375](prs/26375.md) | Custom spell attributes to DB | paired | SQL only | SQL only | blocked | no |
