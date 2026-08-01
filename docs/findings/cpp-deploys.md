@@ -8,6 +8,16 @@ PRs compiled directly into the running worldserver binary:
 Round 1: #26834, #26809, #26818, #26833, #26845, #26565
 Round 2: #26828, #26816, #26466, #26838, #26830
 
+**Plus one local (non-PR) engine fix, deployed 2026-08-01:** the
+`GameEventAIHookWorker::Visit` iterator-invalidation fix, on branch
+`fix/gameevent-visit-iterator-invalidation` off `overnight-test-batch`. See
+[gameevent-visit-iterator-invalidation-fix.md](gameevent-visit-iterator-invalidation-fix.md).
+Rollback binary at `/home/azerothcore/backups/worldserver_rollback_pre-gameevent-fix.bin`.
+
+**The revision banner still reads `3b306d1ae29f` and will keep doing so** until someone
+re-runs `cmake`, because `revision_data.h` is generated at configure time. Do not use the
+banner to decide what a binary contains -- grep the binary, or check the DWARF line table.
+
 **None of these eleven has been exercised or tested in an actual game client yet.** They are
 compiled into the live binary and nothing more -- every one of them should be treated as
 `applied` (in the sense that the code is running) but `verified-in-game: no` if it were tracked
