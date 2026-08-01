@@ -1,0 +1,8 @@
+# The repo is worked on from Windows but everything in ops/vm/ is deployed to a Linux VM,
+# often by scp'ing straight out of the working copy. A CRLF working copy would ship a
+# script whose shebang line ends in \r, which fails with a confusing "bad interpreter"
+# error. Force LF on checkout for anything that lands on the VM.
+ops/vm/** text eol=lf
+*.sh text eol=lf
+*.py text eol=lf
+*.sql text eol=lf

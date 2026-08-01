@@ -1,0 +1,101 @@
+#!/bin/bash
+# ac-diskguard -- threshold guard for the azerothcore VM's storage.
+#
+# The passive controls (coredump.conf MaxUse/KeepFree, tmpfiles age-out) only
+# act on their own schedule or on the next dump. This runs every 15 minutes,
+# says out loud what the numbers are, and reclaims space before anything hits
+# 100%.
+#
+# It is deliberately conservative: it only ever deletes from directories it
+# owns (the coredump store, /var/tmp/ac-scratch) and the journal. It never
+# touches /tmp contents, /home, or the databases -- if /tmp is filling it says
+# so and names the offenders, and a human decides.
+#
+# Every run emits exactly one INFO summary line to the journal so history is
+# greppable:  journalctl -t ac-diskguard
+# Anything it actually does, or any threshold breach, is logged at WARNING.
+
+set -uo pipefail
+
+TAG=ac-diskguard
+COREDUMP_DIR=/var/lib/systemd/coredump
+SCRATCH_DIR=/var/tmp/ac-scratch
+
+# Thresholds.
+ROOT_WARN_FREE_GB=15   # start warning
+ROOT_ACT_FREE_GB=10    # start reclaiming
+TMPFS_WARN_PCT=60      # tmpfs is RAM; warn early
+KEEP_COREDUMPS=3       # newest N kept when reclaiming
+JOURNAL_VACUUM=200M
+
+log()  { logger -t "$TAG" -p daemon.info  -- "$*"; }
+warn() { logger -t "$TAG" -p daemon.warning -- "$*"; }
+
+free_gb() { df -BG --output=avail "$1" 2>/dev/null | tail -1 | tr -dc '0-9'; }
+used_pct() { df --output=pcent "$1" 2>/dev/null | tail -1 | tr -dc '0-9'; }
+dir_mb() { du -sm "$1" 2>/dev/null | cut -f1; }
+
+root_free=$(free_gb /)
+root_pct=$(used_pct /)
+tmp_pct=$(used_pct /tmp)
+core_mb=$(dir_mb "$COREDUMP_DIR")
+scratch_mb=$(dir_mb "$SCRATCH_DIR")
+
+: "${root_free:=0}" "${root_pct:=0}" "${tmp_pct:=0}" "${core_mb:=0}" "${scratch_mb:=0}"
+
+log "root=${root_pct}% used, ${root_free}G free | tmpfs /tmp=${tmp_pct}% used | coredumps=${core_mb}M | scratch=${scratch_mb}M"
+
+acted=0
+
+# --- tmpfs: report only, never auto-delete ------------------------------------
+# /tmp is RAM-backed and shared with everything on the box. Filling it is a
+# memory problem, not a disk problem, so it is worth shouting about -- but the
+# contents may be someone's in-flight work, so this only names names.
+if [ "$tmp_pct" -ge "$TMPFS_WARN_PCT" ]; then
+    warn "/tmp (tmpfs, RAM-backed) is ${tmp_pct}% full -- this competes with worldserver/MySQL memory. Largest entries:"
+    du -sh /tmp/* 2>/dev/null | sort -rh | head -5 | while read -r line; do
+        warn "  /tmp offender: $line"
+    done
+    warn "Move large working files to $SCRATCH_DIR (on disk) instead of /tmp."
+fi
+
+# --- root filesystem ----------------------------------------------------------
+if [ "$root_free" -lt "$ROOT_ACT_FREE_GB" ]; then
+    warn "root filesystem down to ${root_free}G free (threshold ${ROOT_ACT_FREE_GB}G) -- reclaiming."
+
+    # 1. Old scratch. Anything over a day old when we are this tight.
+    if [ -d "$SCRATCH_DIR" ]; then
+        n=$(find "$SCRATCH_DIR" -mindepth 1 -maxdepth 1 -mtime +1 -print 2>/dev/null | wc -l)
+        if [ "$n" -gt 0 ]; then
+            find "$SCRATCH_DIR" -mindepth 1 -maxdepth 1 -mtime +1 -exec rm -rf {} + 2>/dev/null
+            warn "removed $n scratch entries older than 1 day from $SCRATCH_DIR"
+            acted=1
+        fi
+    fi
+
+    # 2. Coredumps beyond the newest KEEP_COREDUMPS. The compressed originals
+    #    are the only copy, so keep enough to diagnose a repeating crash.
+    if [ -d "$COREDUMP_DIR" ]; then
+        mapfile -t old < <(ls -1t "$COREDUMP_DIR"/core.* 2>/dev/null | tail -n +$((KEEP_COREDUMPS + 1)))
+        if [ "${#old[@]}" -gt 0 ]; then
+            for f in "${old[@]}"; do
+                rm -f -- "$f" && warn "pruned old coredump: $(basename "$f")"
+            done
+            acted=1
+        fi
+    fi
+
+    # 3. Journal.
+    before=$(journalctl --disk-usage 2>/dev/null)
+    journalctl --vacuum-size="$JOURNAL_VACUUM" >/dev/null 2>&1 && {
+        warn "vacuumed journal to $JOURNAL_VACUUM (was: $before)"
+        acted=1
+    }
+
+    after=$(free_gb /)
+    warn "reclaim finished: ${root_free}G -> ${after:-?}G free"
+elif [ "$root_free" -lt "$ROOT_WARN_FREE_GB" ]; then
+    warn "root filesystem at ${root_free}G free -- below ${ROOT_WARN_FREE_GB}G warning threshold, not yet reclaiming (acts at ${ROOT_ACT_FREE_GB}G)."
+fi
+
+exit 0

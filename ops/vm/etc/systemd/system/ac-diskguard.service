@@ -1,0 +1,10 @@
+[Unit]
+Description=AzerothCore VM storage guard (thresholds + reclaim)
+Documentation=https://github.com/nickk02/azerothcore-deploy
+After=local-fs.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/ac-diskguard
+Nice=10
+IOSchedulingClass=idle
