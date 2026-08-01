@@ -138,6 +138,7 @@ Sunstrider: [ah-bot-plus](modules/ah-bot-plus.md), [aoe-loot](modules/aoe-loot.m
 - [findings/cmake-install-prefix-config-trap.md](findings/cmake-install-prefix-config-trap.md)
 - [findings/illidan-segfaults-playerbots-hypothesis.md](findings/illidan-segfaults-playerbots-hypothesis.md)
 - [findings/illidan-crash-3-gameevent-visit-segfault.md](findings/illidan-crash-3-gameevent-visit-segfault.md) -- third Illidan segfault, first one with a backtrace; plausible mechanism in `GameEventAIHookWorker::Visit`, not confirmed
+- [findings/gameevent-visit-iterator-invalidation-fix.md](findings/gameevent-visit-iterator-invalidation-fix.md) -- the fix for the above, built and **live on Sunstrider only**, not on Illidan. Also corrects the upstream citation: TrinityCore#17587 is closed (stale, not fixed); only #26687 is open.
 - [findings/illidan-crash-4-mod-assistant-double-delete.md](findings/illidan-crash-4-mod-assistant-double-delete.md) -- **confirmed root cause** of the shutdown crash: `mod-assistant`'s `Assistant` derives from two script bases and is deleted twice by `ScriptMgr::Unload()`. Supersedes the earlier OpenSSL/DB-pool explanations, which were both wrong. No data risk.
 - [findings/mmap-version-mismatch-investigation.md](findings/mmap-version-mismatch-investigation.md) -- generator v20/v19 mismatch is pervasive (44.6% of tiles) but memory-safe by code inspection; not a plausible direct segfault cause
 - [findings/43-file-union-and-filter.md](findings/43-file-union-and-filter.md)
