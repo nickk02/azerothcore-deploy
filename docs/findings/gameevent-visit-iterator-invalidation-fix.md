@@ -1,18 +1,18 @@
 # Fix: snapshot the object store before game-event AI callbacks
 
-Implements the fix recommended by
+Applies the fix recommended in
 [illidan-crash-3-gameevent-visit-segfault.md](illidan-crash-3-gameevent-visit-segfault.md).
-**Live on Sunstrider only. Not deployed to Illidan.**
+**Live on Sunstrider only. Not on Illidan.**
 
-Read the crash-3 doc's confidence framing first: the mechanism is a real, code-level hazard
-sitting exactly on the crashing frame, but nobody has proven which creature's hook actually
-triggers it. This change closes the hazard regardless of which hook does, since it makes the
-whole class of trigger impossible.
+Read the confidence section of the crash-3 document first. The mechanism is a
+real hazard in the code, and it sits on the crashing frame. Nobody has proved
+which creature's hook triggers it. This change closes the whole class of
+trigger, so the answer does not matter.
 
 ## The change
 
-`src/server/game/Events/GameEventMgr.cpp`, both overloads of
-`GameEventAIHookWorker::Visit`. Before:
+The file is `src/server/game/Events/GameEventMgr.cpp`. Both overloads of
+`GameEventAIHookWorker::Visit` change. Before:
 
 ```cpp
 for (auto const& p : creatureMap)
@@ -20,97 +20,105 @@ for (auto const& p : creatureMap)
         p.second->AI()->sOnGameEvent(_activate, _eventId);
 ```
 
-After: copy the pointers into a local `std::vector` first, then walk the copy. Same guards,
-same order, same callbacks; the only difference is that the iteration is no longer over the
-live container.
+After, the code copies the pointers into a local `std::vector` and walks the
+copy. The guards, the order and the callbacks are the same. The loop no longer
+iterates the live container.
 
-The hazard being closed: `sOnGameEvent()` runs arbitrary SmartAI actions, and an action such
-as a same-map `SMART_ACTION_SUMMON_CREATURE` reaches `Creature::AddToWorld()`, which does
-`GetMap()->GetObjectsStore().Insert<Creature>(...)` synchronously against the very container
-being iterated. Inserting into an `std::unordered_map` can rehash it, and a rehash invalidates
-every iterator into it, including the one the range-based `for` is still holding.
+Here is the hazard it closes. `sOnGameEvent()` runs arbitrary SmartAI actions.
+An action such as a same-map `SMART_ACTION_SUMMON_CREATURE` reaches
+`Creature::AddToWorld()`, which calls
+`GetMap()->GetObjectsStore().Insert<Creature>(...)`. That call is synchronous,
+and it targets the container the loop is walking. An insert into a
+`std::unordered_map` can rehash it. A rehash invalidates every iterator into
+that map, including the one the range-based `for` still holds.
 
-The gameobject overload has the identical shape and got the identical treatment.
+The gameobject overload has the same shape and gets the same change.
 
-## Why copying raw pointers is safe here
+## Why the copied pointers are safe
 
-This was checked before writing the patch rather than assumed, because a careless "snapshot"
-fix trades an iterator-invalidation bug for a use-after-free.
+I checked this before writing the patch. A careless snapshot trades an
+iterator-invalidation bug for a use-after-free.
 
-Object destruction in AzerothCore is deferred. `Map::AddObjectToRemoveList()`
-(`Map.cpp:1792`) only inserts into `i_objectsToRemove`; the actual deletes happen in
-`Map::RemoveAllObjectsInRemoveList()`, whose only caller is `Map::DelayedUpdate()`
-(`Map.cpp:1776`, call at `Map.cpp:1789`).
+AzerothCore defers object destruction. `Map::AddObjectToRemoveList()`
+(`Map.cpp:1792`) only inserts into `i_objectsToRemove`. The deletes happen in
+`Map::RemoveAllObjectsInRemoveList()`. Its only caller is `Map::DelayedUpdate()`
+(`Map.cpp:1776`, called at `Map.cpp:1789`).
 
-`RunSmartAIScripts` runs on the `World::Update()` -> `GameEventMgr::Update()` path, which is a
-different phase from `Map::DelayedUpdate()`. Nothing is freed part-way through a sweep, so the
-copied pointers cannot dangle, and the existing per-element guards (`IsInWorld()`,
-`IsDuringRemoveFromWorld()`, `FindMap()`) still correctly skip objects that were logically
-removed during the sweep.
+`RunSmartAIScripts` runs on the `World::Update()` to `GameEventMgr::Update()`
+path. That is a different phase from `Map::DelayedUpdate()`. Nothing is freed
+during a sweep, so the copied pointers cannot dangle. The per-element guards
+(`IsInWorld()`, `IsDuringRemoveFromWorld()`, `FindMap()`) still skip objects
+that were removed during the sweep.
 
 ## Upstream
 
-`GameEventAIHookWorker` is stock AzerothCore/TrinityCore engine code, not Playerbots-authored,
-so this is worth upstreaming.
+`GameEventAIHookWorker` is stock AzerothCore and TrinityCore engine code.
+Playerbots did not write it, so this fix is worth upstreaming.
 
-- **TrinityCore#26687, "Crash GameEventMgr::RunSmartAIScripts"** -- open since 2021-07-13, one
-  comment. Directly on point.
-- **TrinityCore#17587, "Crash i_AI"** -- **closed**, not open. Closed 2018-05-05 as
-  `completed`, but the closing comment is "I presume this is no longer valid, more than a year
-  with no crash", i.e. closed for staleness rather than because a fix landed. Earlier notes in
-  this project listed both as "still-open upstream reports"; that was wrong about this one, and
-  it is weak supporting evidence in any case. Cite #26687.
+- **TrinityCore#26687, "Crash GameEventMgr::RunSmartAIScripts".** Open since
+  2021-07-13, one comment. Directly on point. Cite this one.
+- **TrinityCore#17587, "Crash i_AI".** Closed on 2018-05-05 as `completed`. The
+  closing comment reads "I presume this is no longer valid, more than a year
+  with no crash", so it closed for staleness and not because a fix landed.
+  Earlier notes in this project called both reports open. That was wrong.
 
 ## Build and verification
 
-Built on branch `fix/gameevent-visit-iterator-invalidation` (off `overnight-test-batch` at
-`3b306d1ae`) in the isolated tree `~/azerothcore-wotlk/build-test`, whose
-`CMAKE_INSTALL_PREFIX` is `~/azeroth-server-test`. Clean, 100%, exit 0.
+Built on branch `fix/gameevent-visit-iterator-invalidation`, taken from
+`overnight-test-batch` at `3b306d1ae`. The tree is `~/azerothcore-wotlk/build-test`
+and its `CMAKE_INSTALL_PREFIX` is `~/azeroth-server-test`. The build finished
+clean at 100% with exit 0.
 
-**The revision banner still reads `3b306d1ae29f`, and that is expected, not a stale build.**
-`revision_data.h` is generated at CMake *configure* time, not build time, so running `make`
-without re-running `cmake` always leaves the banner behind. This exact trap already cost this
-project a wrong conclusion once (see
-[cmake-install-prefix-config-trap.md](cmake-install-prefix-config-trap.md) and the round-2
-deploy notes). So the banner was deliberately *not* used as evidence.
+**The revision banner still reads `3b306d1ae29f`. That is expected.**
+`revision_data.h` is generated when CMake configures, not when the code builds,
+so `make` without a fresh `cmake` always leaves the banner behind. This trap has
+already produced one wrong conclusion in this project. See
+[cmake-install-prefix-config-trap.md](cmake-install-prefix-config-trap.md). The
+banner was therefore not used as evidence.
 
-Instead the binary was verified two independent ways:
+The binary was checked two other ways instead:
 
-1. **DWARF line table.** `objdump --dwarf=decodedline` on
-   `GameEventMgr.cpp.o` lists lines 1901, 1902, 1916 and 1917 -- the
-   `std::vector<Creature*> creatures;` / `creatures.reserve(...)` and their gameobject
-   counterparts -- as having generated instructions. The new code is genuinely compiled in,
-   not merely present in the source file.
-2. **Chain of custody by timestamp.** source `00:31:45` -> object `00:37:47` -> linked binary
-   `00:46:04`, all after the patch, with the live Illidan binary still dated `2026-07-25`.
+1. **DWARF line table.** `objdump --dwarf=decodedline` on `GameEventMgr.cpp.o`
+   lists lines 1901, 1902, 1916 and 1917 as having generated instructions.
+   Those lines hold `std::vector<Creature*> creatures;`, the matching
+   `creatures.reserve(...)`, and the gameobject equivalents. The new code is
+   compiled in, not merely present in the source.
+2. **Timestamps.** Source at `00:31:45`, object at `00:37:47`, linked binary at
+   `00:46:04`. All three follow the patch. The live Illidan binary is still
+   dated 2026-07-25.
 
 ## Deploy state
 
-**Sunstrider (`ac-worldserver`, port 8085, `acore_world`): live.**
+**Sunstrider (`ac-worldserver`, port 8085, `acore_world`) is live.**
 
-- Rollback binary saved first: `/home/azerothcore/backups/worldserver_rollback_pre-gameevent-fix.bin`.
-- Swapped via copy-to-temp-then-rename (plain `cp` onto a running binary fails `ETXTBSY`).
-- Player count re-checked at 0 immediately before the restart, not just earlier in the pass.
-- Post-restart: `WORLD: World Initialized In 0 Minutes 8 Seconds`, `> RealmID: 2` read from its
-  own boot log (the `-c <path>` fix holding), listening on 8085 confirmed via `ss -tln` rather
-  than log silence, `ActiveState=active`, `NRestarts=0`, no new errors.
-- The one message in the boot log that greps as an error, `Can't set process priority class,
-  error: Permission denied`, is pre-existing and benign: 20 occurrences going back to
-  2026-07-25, long predating this change.
+- A rollback binary was saved first, at
+  `/home/azerothcore/backups/worldserver_rollback_pre-gameevent-fix.bin`.
+- The swap copied to a temporary file and renamed it. A plain `cp` onto a
+  running binary fails with `ETXTBSY`.
+- The player count was re-checked at 0 immediately before the restart, not
+  earlier in the pass.
+- After the restart: `WORLD: World Initialized In 0 Minutes 8 Seconds`, and
+  `> RealmID: 2` read from its own boot log, so the `-c <path>` fix holds. Port
+  8085 was confirmed with `ss -tln` rather than by silence in the log.
+  `ActiveState=active`, `NRestarts=0`, no new errors.
+- One boot-log line matches a grep for errors: `Can't set process priority
+  class, error: Permission denied`. It is benign and pre-existing, with 20
+  occurrences going back to 2026-07-25.
 
-**Illidan (`pb-worldserver`, port 8086, `acore_pb_world`): NOT deployed.** Binary untouched,
-still dated 2026-07-25, 40 bots online, never restarted during this work. Deploying to the live
-play realm is a judgment call left for Nick, and Illidan runs the Playerbots fork rather than
-this tree, so it needs its own build.
+**Illidan (`pb-worldserver`, port 8086, `acore_pb_world`) is not deployed.** The
+binary is untouched and still dated 2026-07-25. 40 bots are online and it has
+not restarted during this work. Deploying to the live play realm is Nick's
+decision. Illidan also runs the Playerbots fork rather than this tree, so it
+needs its own build.
 
-## What this does and does not prove
+## What this proves
 
-It does not prove the crash is fixed. The crash fires at a daily 20:00 UTC event boundary on
-**Illidan**, which does not have this build. Sunstrider has never exhibited crash 3 at all, so
-there is nothing on Sunstrider to observe getting better.
+It does not prove the crash is fixed. The crash fires at the daily 20:00 UTC
+event boundary on Illidan, and Illidan does not have this build. Sunstrider has
+never shown crash 3, so there is nothing there to observe.
 
-What it proves: the change compiles, links, and boots a worldserver cleanly without regressing
-startup. Confirmation would come from running it on Illidan across several 20:00 boundaries and
-seeing the segfault stop, which is exactly the deploy decision being left for Nick.
+It proves the change compiles, links and boots a worldserver without breaking
+startup. Confirmation needs Illidan to run it across several 20:00 boundaries
+with no segfault. That is the deploy decision left for Nick.
 
-`verified-in-game: no`, consistent with every other row in this repo.
+`verified-in-game: no`, like every other row in this repository.
