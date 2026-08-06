@@ -1,70 +1,76 @@
-# Finding: MMAP generator v20/v19 mismatch on Illidan (memory-safe, not the segfault cause)
+# Finding: MMAP generator v20/v19 mismatch on Illidan. Memory-safe, not the segfault cause
 
 file: `src/common/Collision/Management/MMapMgr.cpp:88-94` (mod-playerbots/azerothcore-wotlk)
-scope: Illidan (Playerbots realm) only
-severity: cosmetic/pathing-quality issue, not a crash risk
+scope: Illidan, the Playerbots realm, only
+severity: pathing quality, not a crash risk
 related: [findings/illidan-segfaults-playerbots-hypothesis.md](illidan-segfaults-playerbots-hypothesis.md)
 
-Investigated whether the repeating `MMAP:loadMap: <tile>.mmtile was built with generator v20,
-expected v19` warning in Illidan's `pb-worldserver` journal is connected to the two unexplained
-segfaults. Short answer: the mismatch is real and pervasive, but the code path it triggers is
-memory-safe by inspection, not a plausible direct cause of a segfault.
+Illidan's `pb-worldserver` journal repeats this warning: `MMAP:loadMap: <tile>.mmtile
+was built with generator v20, expected v19`. I checked whether it connects to
+the two unexplained segfaults.
 
-## Scope of the warning
+It does not. The mismatch is real and it affects most of the world. The code
+path it triggers is memory-safe by inspection.
 
-Pulled the full warning history from `journalctl -u pb-worldserver` (retained journal covers
-2026-07-25 through 2026-07-30, i.e. every boot since logging on this unit began):
+## How widespread the warning is
 
-- 29,476 total warning lines across the retained window.
-- 1,684 distinct tile IDs affected, out of 3,780 total `.mmtile` files present in the server's
-  `DataDir` -- **about 44.6% of all tiles on disk**.
-- By map-ID prefix (first 3 digits of the tile filename):
+I pulled the full warning history from `journalctl -u pb-worldserver`. The
+retained journal covers 2026-07-25 to 2026-07-30, which is every boot since
+logging began on this unit.
 
-  | map ID | warnings | map |
-  |---|---|---|
-  | 001 | 9,865 | Kalimdor |
-  | 530 | 6,562 | Outland |
-  | 000 | 6,503 | Eastern Kingdoms |
-  | 571 | 6,322 | Northrend |
-  | 369 | 218 | minor/instance map, not further identified |
-  | 609 | 6 | minor/instance map, not further identified |
+- 29,476 warning lines in the retained window.
+- 1,684 distinct tile IDs, out of 3,780 `.mmtile` files in the server's
+  `DataDir`. That is **44.6% of the tiles on disk**.
 
-  All four main open-world continents are affected, not one isolated zone. This is pervasive,
-  not a handful of stray tiles.
-- Within a single boot, ~97% of that boot's warnings fire in the first minute (grid preload as
-  the world loads and bots log in); the remaining ~3% trickle in over the following hour as
-  bots/players move into grids not yet touched since startup. This matches on-demand,
-  per-grid-activation tile loading, not a retry loop hammering the same tile.
+By map ID, taken from the first three digits of the tile filename:
 
-## Provenance: extractor/binary version skew, not stale files
+| Map ID | Warnings | Map |
+|---|---|---|
+| 001 | 9,865 | Kalimdor |
+| 530 | 6,562 | Outland |
+| 000 | 6,503 | Eastern Kingdoms |
+| 571 | 6,322 | Northrend |
+| 369 | 218 | minor or instance map, not identified |
+| 609 | 6 | minor or instance map, not identified |
 
-All 3,780 `.mmtile` files under the server's configured `DataDir` share a single, identical
-mtime (2026-07-19), meaning they were deposited in one bulk copy/extraction pass, not
-accumulated incrementally over time. That directory is
-`/home/azerothcore/azeroth-server/data` (Sunstrider's data path, per
-`playerbots-server/etc/worldserver.conf`'s `DataDir` setting) -- map/vmap/mmap client data is
-shared between the two realms rather than duplicated per-realm, so it wasn't regenerated
-specifically for the Playerbots fork.
+All four open-world continents are affected. This is not a handful of stray
+tiles.
 
-The version numbers explain the rest:
+Within one boot, about 97% of that boot's warnings fire in the first minute,
+while the grids preload and the bots log in. The remaining 3% arrive over the
+next hour as bots and players enter grids that startup did not touch. That
+matches per-grid tile loading on demand. It is not a retry loop hitting one
+tile.
 
-- The exact commit running on Illidan is `ceeb3116e` (mod-playerbots/azerothcore-wotlk,
-  Playerbot branch, dated 2026-07-24 -- confirmed against the `AzerothCore rev.` line in the
-  journal). `MMAP_VERSION` at that exact commit is `19`
-  (`src/common/Collision/Maps/MapDefines.h`).
-- Upstream `azerothcore/azerothcore-wotlk` `master` currently defines `MMAP_VERSION` as `20`
-  (confirmed against the live file on GitHub).
+## Cause: version skew between the extractor and the binary
 
-So the `.mmtile` files were extracted with a `mmaps_generator` build newer than (or divergent
-from) what's compiled into Illidan's worldserver binary -- the Playerbots fork hasn't picked up
-the upstream commit that bumped 19 to 20 yet. This is ordinary toolchain/binary version skew,
-not file corruption or bit-rot.
+All 3,780 `.mmtile` files under the configured `DataDir` share one identical
+mtime, 2026-07-19. They arrived in a single bulk copy, not one at a time.
 
-## What the code actually does on a mismatch
+That directory is `/home/azerothcore/azeroth-server/data`, which is Sunstrider's
+data path, set by `DataDir` in `playerbots-server/etc/worldserver.conf`. The two
+realms share the map, vmap and mmap client data instead of holding a copy each,
+so nobody regenerated it for the Playerbots fork.
 
-`MMapMgr::LoadTile` (`src/common/Collision/Management/MMapMgr.cpp:68-122`) reads the fixed-size
-tile header first, checks the magic number, then checks the version, all before ever touching
-the tile's payload bytes:
+The version numbers explain the rest.
+
+- Illidan runs commit `ceeb3116e` of mod-playerbots/azerothcore-wotlk, Playerbot
+  branch, dated 2026-07-24. I confirmed that against the `AzerothCore rev.` line
+  in the journal. `MMAP_VERSION` at that commit is `19`, in
+  `src/common/Collision/Maps/MapDefines.h`.
+- Upstream `azerothcore/azerothcore-wotlk` `master` defines `MMAP_VERSION` as
+  `20`. I confirmed that against the live file on GitHub.
+
+So a `mmaps_generator` build newer than Illidan's worldserver extracted the
+tiles. The Playerbots fork has not taken the upstream commit that moved 19 to
+20. This is ordinary version skew between a tool and a binary. The files are not
+corrupt.
+
+## What the code does on a mismatch
+
+`MMapMgr::LoadTile` (`src/common/Collision/Management/MMapMgr.cpp:68-122`) reads
+the fixed-size tile header, checks the magic number, then checks the version. It
+does all of that before it touches the payload:
 
 ```cpp
 // read header
@@ -87,23 +93,23 @@ if (fileHeader.mmapVersion != MMAP_VERSION)
 unsigned char* data = (unsigned char*)dtAlloc(fileHeader.size, DT_ALLOC_PERM);
 ```
 
-On a version mismatch the function logs, closes the file, and returns `false` immediately. The
-`dtAlloc`/`fread(data, fileHeader.size, ...)`/`navMesh->addTile(...)` block below it -- the part
-that would actually parse the tile as Detour navmesh data -- is never reached. There is no
-reinterpretation of a stale struct layout and no read of attacker-or-generator-controlled `size`
-bytes when the version check fails. This rules out hypothesis (b) from the task: it's not
-reading the mismatched tile with an incompatible layout.
+On a version mismatch the function logs, closes the file and returns `false`. It
+never reaches the `dtAlloc`, the `fread(data, fileHeader.size, ...)` or the
+`navMesh->addTile(...)` below, which is the code that would parse the tile as
+Detour navmesh data. Nothing reinterprets a stale struct layout, and nothing
+reads `size` bytes chosen by the generator. This rules out hypothesis (b) from
+the task: the server does not read the mismatched tile with an incompatible
+layout.
 
-The caller doesn't treat this as exceptional either.
-`MapCollisionData::LoadMMapTile` -> `GridTerrainLoader::LoadMMap`
-(`src/server/game/Grids/GridTerrainLoader.cpp:72-92`) maps the failure to
-`MMAP_LOAD_RESULT_ERROR`, which just gets a `LOG_DEBUG` and nothing else -- no exception, no
-retry storm (each tile is loaded once per grid activation, confirmed by the boot-time
-distribution above).
+The caller treats the failure as routine. `MapCollisionData::LoadMMapTile` calls
+`GridTerrainLoader::LoadMMap` (`src/server/game/Grids/GridTerrainLoader.cpp:72-92`),
+which maps the failure to `MMAP_LOAD_RESULT_ERROR`. That produces a `LOG_DEBUG`
+and nothing else. There is no exception and no retry storm. Each tile loads once
+per grid activation, which the boot-time distribution above confirms.
 
-The actual consumer, `PathGenerator::CalculatePath`
-(`src/server/game/Movement/MovementGenerators/PathGenerator.cpp:57-87`), explicitly checks for
-exactly this condition:
+The consumer checks for this case directly.
+`PathGenerator::CalculatePath`
+(`src/server/game/Movement/MovementGenerators/PathGenerator.cpp:57-87`):
 
 ```cpp
 // make sure navMesh works - we can run on map w/o mmap
@@ -118,43 +124,49 @@ if (!_navMesh || !_navMeshQuery || (_sourceUnit && _sourceUnit->HasUnitState(UNI
 }
 ```
 
-If either endpoint's tile isn't loaded, it builds a straight-line shortcut and returns
-successfully. This is the same, pre-existing fallback AzerothCore uses for any map that has no
-mmaps generated at all -- it is not a fragile or rarely-exercised branch.
+If either endpoint's tile is absent, it builds a straight-line shortcut and
+returns success. AzerothCore already uses this fallback for any map with no
+mmaps at all, so it is well exercised.
 
-## Plausibility assessment
+## Assessment
 
-**As a direct memory-safety cause of the segfaults: implausible.** The version check happens
-before any read of the tile's payload, and the failure path back through `GridTerrainLoader` and
-`PathGenerator` is exactly the same defensive fallback the engine already uses for maps with no
-mmaps at all. Nothing in this path reads out of bounds or reinterprets incompatible data.
+**As a direct memory-safety cause of the segfaults: implausible.** The version
+check runs before any read of the payload. The failure path through
+`GridTerrainLoader` and `PathGenerator` is the same defensive fallback the engine
+uses for maps with no mmaps. Nothing in that path reads out of bounds or
+reinterprets incompatible data.
 
-**As an indirect contributing factor: inconclusive, but not ruled out.** Roughly 45% of the
-world's tiles -- across all four main continents -- are permanently forced onto the
-straight-line shortcut path (`PATHFIND_NOT_USING_PATH`) instead of proper navmesh pathing, and
-this has been true on every boot since journal retention begins. Illidan runs dozens of
-Playerbots-controlled bots pathing continuously, so this fallback code executes far more often,
-and across a far larger fraction of the map, than it would on a normal realm with a handful of
-human players. Fallback branches that are rarely exercised on other realms get disproportionate
-exercise here. That's a real structural difference worth keeping in mind, but this investigation
-found no direct evidence -- no backtrace, no coredump, no log correlation -- tying an actual
-crash to shortcut-path usage or to how Playerbots' own movement code consumes
-`PATHFIND_NOT_USING_PATH` results (Playerbots' movement-generator code is not in this repo and
-wasn't reviewed as part of this pass). Confirming or ruling this out needs either a backtrace
-from the next crash (core dumps are now enabled per
-[findings/illidan-segfaults-playerbots-hypothesis.md](illidan-segfaults-playerbots-hypothesis.md))
-correlated against map/tile IDs, or a review of Playerbots' movement-generator handling of
-shortcut paths at scale.
+**As an indirect factor: inconclusive. Not ruled out.** About 45% of the world's
+tiles, across all four continents, are permanently forced onto the straight-line
+shortcut (`PATHFIND_NOT_USING_PATH`) instead of navmesh pathing. That has been
+true on every boot in the retained journal.
+
+Illidan runs dozens of Playerbots-controlled bots that path continuously, so
+this fallback runs far more often, and over far more of the map, than on a realm
+with a few human players. A branch that other realms rarely reach gets heavy use
+here. That is a real structural difference and worth remembering.
+
+This investigation found no direct evidence for it. There is no backtrace, no
+coredump and no log correlation tying a crash to shortcut-path use, or to how
+Playerbots' movement code consumes a `PATHFIND_NOT_USING_PATH` result. That
+movement-generator code is not in this repository and I did not review it.
+
+To settle it, either correlate the next crash's backtrace against map and tile
+IDs, or review how Playerbots handles shortcut paths at scale. Core dumps are
+now enabled. See
+[findings/illidan-segfaults-playerbots-hypothesis.md](illidan-segfaults-playerbots-hypothesis.md).
 
 ## Not done
 
-Mmaps were not regenerated. Regeneration requires the original map/vmap client data extraction
-and is a call for Nick to make, not something done as part of this investigation.
+The mmaps were not regenerated. That needs the original map and vmap client data
+extraction, and it is Nick's decision.
 
 ## Status
 
-The generator-version mismatch is confirmed pervasive (44.6% of tiles, all four continents,
-every boot) and confirmed memory-safe by direct code inspection. It's downgraded from "current
-leading hypothesis" to "structural amplifier worth re-checking against the next backtrace, not a
-standalone explanation" -- the Playerbots-hypothesis doc's core question (why does only the
-bot-heavy realm crash) remains open.
+The version mismatch is confirmed widespread: 44.6% of tiles, all four
+continents, every boot. It is confirmed memory-safe by direct code inspection.
+
+It moves from "leading hypothesis" to "structural amplifier, re-check against
+the next backtrace". It does not explain the crashes on its own. The core
+question in the Playerbots-hypothesis document is still open: why does only the
+bot-heavy realm crash?
