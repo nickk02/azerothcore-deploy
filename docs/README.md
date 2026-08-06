@@ -1,34 +1,54 @@
 # Deploy docs index
 
-Backfill of everything touched on Sunstrider (upstream realm, `acore_world`) and Illidan
-(Playerbots realm, `acore_pb_world`) since 2026-07-28, reconciled against the live databases
-and the GitHub API rather than trusted from memory. **The single most important fact in this
-table: of the 20 rows marked `applied`, ALL 20 are `verified-in-game: no`.** Nothing has been
-confirmed working from an actual game client except the RealmID config-resolution fix (see
-docs/incidents/2026-07-30-sunstrider-realmid-config-resolution.md), which isn't a PR at all.
+A record of everything changed on Sunstrider (the upstream realm, `acore_world`)
+and Illidan (the Playerbots realm, `acore_pb_world`) since 2026-07-28. Every row
+was checked against the live databases and the GitHub API. None of it is
+recalled from memory.
 
-**Sweep status (2026-07-30):** checked upstream `azerothcore/azerothcore-wotlk` for PRs merged after
-#26856 (2026-07-29T08:00:49Z, the latest-tracked PR) -- nothing has merged since. The most recent
-merge upstream is still #26855 (2026-07-29T08:02:17Z), already tracked as `skipped` (cpp-only). #26842
-was found already applied on both realms during this pass (merged 2026-07-28, predates #26856 but had
-been missed by the earlier backfill) and is now tracked as `already-satisfied`.
+**Read this first: 20 rows are marked `applied`. All 20 are
+`verified-in-game: no`.** Nobody has confirmed any of it from a game client. The
+one exception is the RealmID config-resolution fix, which is an incident, not a
+PR. See `docs/incidents/2026-07-30-sunstrider-realmid-config-resolution.md`.
 
-The 6 rows previously marked `unknown` (26097, 26694, 13322, 19679, 24380, 26763) were
-resolved on 2026-07-30: five of the six numbers were never PRs at all -- they were upstream
-GitHub *Issue* numbers that the compiled backlog mistook for PR numbers (issues and PRs share
-one number sequence on the same repo). Of those five, #26097 and #26694 turned out to have
-hand-authored SQL fixes in `nickk02/azerothcore-ops` round2sql-archive/ that DB checks confirm
-are live on both realms (now `applied`); #13322, #19679, and #24380 have no fix anywhere and
-DB checks confirm the underlying bugs are still present (now `skipped`). The sixth, #26763,
-was in fact a real, still-open upstream PR that an earlier pass missed on a bad search --
-its SQL is also confirmed live on both realms (now `applied`). See each PR's doc for the
-evidence trail.
+## Sweep on 2026-07-30
 
-**Sweep status (2026-07-31):** checked upstream for anything merged after #26856 -- found #26865
-(merged 2026-07-30), a pure-SQL creature/waypoint rewrite with no C++ component. Collision-checked
-the target GUID range (12804-12810), waypoint IDs (128040-128100), and creature_multispawn rows on
-both realms before writing (all free, no custom-content collisions), applied to both realms since it's
-sql-only, and confirmed post-apply state matches the PR's target values identically on both.
+Checked upstream `azerothcore/azerothcore-wotlk` for PRs merged after #26856
+(2026-07-29T08:00:49Z, the latest tracked PR). Nothing had merged since. The most
+recent upstream merge was still #26855, already tracked as `skipped` because it
+is C++ only.
+
+#26842 was already applied on both realms. It merged on 2026-07-28, before
+#26856, and the earlier backfill missed it. It is now tracked as
+`already-satisfied`.
+
+Six rows were marked `unknown`: 26097, 26694, 13322, 19679, 24380 and 26763. All
+six are now resolved.
+
+Five of the six were never PRs. They are upstream GitHub *issue* numbers, and the
+compiled backlog read them as PR numbers. Issues and PRs share one number
+sequence on a repository, so the two are easy to confuse.
+
+- #26097 and #26694 have hand-written SQL fixes in the `round2sql-archive/`
+  folder of `nickk02/azerothcore-ops`. Database checks confirm both are live on
+  both realms. Both are now `applied`.
+- #13322, #19679 and #24380 have no fix anywhere. Database checks confirm the
+  bugs are still present. All three are now `skipped`.
+
+The sixth, #26763, is a real upstream PR that is still open. An earlier pass
+missed it through a bad search. Its SQL is live on both realms, so it is now
+`applied`.
+
+Each PR's own document holds the evidence.
+
+## Sweep on 2026-07-31
+
+Checked upstream for anything merged after #26856. Found #26865, merged
+2026-07-30. It is a pure-SQL creature and waypoint rewrite with no C++ part.
+
+Before writing, I checked the target GUID range (12804-12810), the waypoint IDs
+(128040-128100) and the creature_multispawn rows on both realms. All were free,
+and none collided with custom content. The PR is SQL only, so it went to both
+realms. After applying it, both realms match the PR's target values exactly.
 
 ## Counts by status
 
@@ -40,9 +60,10 @@ sql-only, and confirmed post-apply state matches the PR's target values identica
 | already-satisfied | 2 |
 | **total** | **50** |
 
-Plus: 10 issues tracked (docs/issues/, 2 applied, 8 skipped), 19 modules tracked (docs/modules/,
-11 actually installed -- all on Illidan, none on Sunstrider), 8 findings (docs/findings/), 1
-incident (docs/incidents/).
+The repository also tracks 10 issues in `docs/issues/`, of which 2 are applied
+and 8 are skipped. It tracks 19 modules in `docs/modules/`. Only 11 of those are
+installed, all on Illidan and none on Sunstrider. There are 8 findings in
+`docs/findings/` and 1 incident in `docs/incidents/`.
 
 ## PRs and issues, sorted by status
 
