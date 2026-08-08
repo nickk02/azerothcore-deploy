@@ -2,7 +2,7 @@
 
 Applies the fix recommended in
 [illidan-crash-3-gameevent-visit-segfault.md](illidan-crash-3-gameevent-visit-segfault.md).
-**Live on Sunstrider only. Not on Illidan.**
+**Live on both realms. Sunstrider since 2026-08-01, Illidan since 2026-08-07.**
 
 Read the confidence section of the crash-3 document first. The mechanism is a
 real hazard in the code, and it sits on the crashing frame. Nobody has proved
@@ -105,17 +105,33 @@ The binary was checked two other ways instead:
   class, error: Permission denied`. It is benign and pre-existing, with 20
   occurrences going back to 2026-07-25.
 
-**Illidan (`pb-worldserver`, port 8086, `acore_pb_world`) is not deployed.** The
-binary is untouched and still dated 2026-07-25. 40 bots are online and it has
-not restarted during this work. Deploying to the live play realm is Nick's
-decision. Illidan also runs the Playerbots fork rather than this tree, so it
-needs its own build.
+**Illidan (`pb-worldserver`, port 8086, `acore_pb_world`): live since
+2026-08-07.**
+
+Illidan runs the Playerbots fork, so it needed its own build. That happened on
+2026-08-06 alongside the mod-assistant class split and the module changes. The
+same patch was applied to both `Visit` overloads in
+`playerbots-wotlk/src/server/game/Events/GameEventMgr.cpp`.
+
+Verified by DWARF on the built object, not by the revision banner:
+`objdump --dwarf=decodedline` on `GameEventMgr.cpp.o` reports generated
+instructions across lines 1893 to 1914, which is the new snapshot code in both
+overloads.
+
+The binary went live at Aug 07 20:00:42, when systemd auto-restarted the service
+after that day's crash. That restart happened *after* the 20:00 boundary, so the
+fix has not yet been tested against one.
 
 ## What this proves
 
 It does not prove the crash is fixed. The crash fires at the daily 20:00 UTC
-event boundary on Illidan, and Illidan does not have this build. Sunstrider has
-never shown crash 3, so there is nothing there to observe.
+event boundary on Illidan. Illidan now has this build, but it only started
+carrying it at Aug 07 20:00:42, after that day's boundary had already passed.
+Sunstrider has never shown crash 3, so there is nothing there to observe.
+
+The test is whether Illidan passes several 20:00 boundaries without a SIGSEGV.
+Use the discriminator from the crash-4 document: a SIGSEGV with no preceding
+`Stopping` line is crash 3.
 
 It proves the change compiles, links and boots a worldserver without breaking
 startup. Confirmation needs Illidan to run it across several 20:00 boundaries
