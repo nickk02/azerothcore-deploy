@@ -195,7 +195,8 @@ teardown, and that is wrong.
 
 ## The fix
 
-Not implemented. It needs a rebuild.
+**Applied and confirmed in production on 2026-08-08.** See "Deploy and result"
+below. The rest of this section describes the change.
 
 Split `Assistant` into one class per script type, which is what nearly every
 other AzerothCore module does:
@@ -209,13 +210,45 @@ Register both in the module's `AddSC_*` loader. Move the shared configuration
 state into a small struct or a namespace-scope object that both classes read.
 Do not keep it in members of a doubly-registered object.
 
-This is a C++ change to a module in Illidan's tree, so it needs a full rebuild
-and redeploy of `pb-worldserver`. **The standing rule says do not run that
-unattended.** It belongs with the staged Illidan module rebuild
-(`~/ILLIDAN-REBUILD-STAGED.md`), with Nick present.
+This is a C++ change to a module in Illidan's tree, so it needed a full rebuild
+and redeploy of `pb-worldserver`. That was done with Nick present, together with
+the staged module rebuild (`~/ILLIDAN-REBUILD-STAGED.md`).
 
 Report it to the `mod-assistant` maintainers as well. The defect is in their
 module.
+
+## Deploy and result
+
+Built into `playerbots-wotlk` and installed on 2026-08-06 22:00.
+
+The installed binary was checked by symbol, not by the revision banner:
+
+| Symbol | Count |
+|---|---|
+| `Assistant_WorldScript::OnAfterConfigLoad(bool)` | present |
+| `Assistant_WorldScript::Assistant_WorldScript()` | present |
+| `Assistant::LoadConfig` | present |
+| `non-virtual thunk to Assistant::~Assistant` | **0** |
+
+That last row is the proof. The thunk was frame #9 of the backtrace above. It no
+longer exists in the binary, so the destroy-through-a-secondary-base path is
+gone.
+
+**The result, from the journal:**
+
+```
+Aug 08 23:25:05  Stopping pb-worldserver.service...
+Aug 08 23:25:08  pb-worldserver.service: Deactivated successfully.
+```
+
+That is the first clean stop this service has ever recorded. The running tally
+is now 1 clean stop against 28 SIGSEGVs, and the single clean one is the first
+deliberate stop of the fixed binary.
+
+Note on the timeline: the binary went live earlier than the deliberate restart.
+Illidan hit crash 3 at Aug 07 20:00:27 on the old binary, and systemd's
+auto-restart loaded the new one at 20:00:42. The 2026-08-08 stop was therefore
+the first shutdown the fix actually governed.
 
 ### Interim mitigation, already applied
 
