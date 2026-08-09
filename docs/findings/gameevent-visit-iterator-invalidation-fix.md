@@ -53,7 +53,16 @@ that were removed during the sweep.
 ## Upstream
 
 `GameEventAIHookWorker` is stock AzerothCore and TrinityCore engine code.
-Playerbots did not write it, so this fix is worth upstreaming.
+Playerbots did not write it, so the same defect exists upstream.
+
+We do not report it. Fixes for this deployment are carried here and applied on
+our own schedule. The reports below are recorded because they confirm the
+defect is known and unfixed upstream, not as something to contribute to.
+
+Practical consequence: this patch is local. Any future merge from either
+upstream will drop it. Re-check both `Visit` overloads in
+`src/server/game/Events/GameEventMgr.cpp` after a merge; if they iterate
+`creatureMap` directly again instead of a snapshot, the hazard is back.
 
 - **TrinityCore#26687, "Crash GameEventMgr::RunSmartAIScripts".** Open since
   2021-07-13, one comment. Directly on point. Cite this one.

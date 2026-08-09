@@ -214,8 +214,9 @@ This is a C++ change to a module in Illidan's tree, so it needed a full rebuild
 and redeploy of `pb-worldserver`. That was done with Nick present, together with
 the staged module rebuild (`~/ILLIDAN-REBUILD-STAGED.md`).
 
-Report it to the `mod-assistant` maintainers as well. The defect is in their
-module.
+The defect is in a third-party module, but we do not report it upstream. Fixes
+for this deployment are carried here and applied on our own schedule. See
+"Upstream policy" at the end of this document.
 
 ## Deploy and result
 
@@ -332,3 +333,14 @@ This is safe to confirm on the test realm, and that is the way to validate a fix
 
 Verifying on Illidan means restarting the live realm. Under the standing rules
 that happens only in a confirmed zero-player window.
+
+## Upstream policy
+
+We do not open issues or pull requests on other people's repositories for this
+project. Every fix lives in this deployment and in these notes, and it lands on
+our own schedule.
+
+That means a fix like the class split above is carried locally and will be
+re-applied by hand after any future merge from the `mod-assistant` upstream.
+Check for it after such a merge: if `class Assistant` derives from both
+`CreatureScript` and `WorldScript` again, the double delete is back.
